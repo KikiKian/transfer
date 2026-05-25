@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Send</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .card {
+            background-color: #111;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 40px;
+            width: 380px;
+            box-shadow: 0 0 40px rgba(255,255,255,0.03);
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            letter-spacing: 0.5px;
+        }
+
+        .folder-row {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .folder-row input {
+            flex: 1;
+            margin: 0;
+        }
+
+        .folder-btn {
+            padding: 10px 14px;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: #aaa;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: border 0.2s, color 0.2s;
+            margin: 0;
+            width: auto;
+        }
+
+        .folder-btn:hover {
+            border-color: #555;
+            color: white;
+            background-color: #1a1a1a;
+        }
+
+        input {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px 14px;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        input:focus {
+            border-color: #555;
+        }
+
+        button[type="submit"] {
+            margin-top: 20px;
+            width: 100%;
+            padding: 11px;
+            background-color: white;
+            color: black;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #ddd;
+        }
+
+        button[type="submit"]:disabled {
+            background-color: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .progress-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 24px;
+        }
+
+        .circle-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .circle-wrapper svg {
+            transform: rotate(-90deg);
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: #222;
+            stroke-width: 6;
+        }
+
+        .circle-fill {
+            fill: none;
+            stroke: white;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 220;
+            stroke-dashoffset: 220;
+            transition: stroke-dashoffset 0.3s ease;
+        }
+
+        .circle-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+
+        #status {
+            margin-top: 14px;
+            font-size: 13px;
+            color: #666;
+            min-height: 18px;
+            text-align: center;
+        }
+
+        a {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            color: #444;
+            font-size: 13px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Send Files</h1>
+        <form id="sendForm">
+            <div class="folder-row">
+                <input type="text" name="folder" id="folderInput" placeholder="Folder path" />
+                <button type="button" class="folder-btn" onclick="document.getElementById('folderPicker').click()">Browse</button>
+            </div>
+            <input type="file" id="folderPicker" webkitdirectory style="display:none" />
+            <input type="password" name="password" placeholder="Password" />
+            <input type="text" name="serverAddr" placeholder="Server address" />
+            <button type="submit" id="sendBtn">Send</button>
+        </form>
+        <div class="progress-container" id="progressContainer">
+            <div class="circle-wrapper">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                    <circle class="circle-bg" cx="40" cy="40" r="35"/>
+                    <circle class="circle-fill" id="circleFill" cx="40" cy="40" r="35"/>
+                </svg>
+                <span class="circle-label" id="circleLabel">0%</span>
+            </div>
+        </div>
+        <p id="status"></p>
+        <a href="/recieve.html">Go to Receive</a>
+    </div>
+
+    <script>
+        // Folder picker — shows folder name in input (browser can't give full path)
+        document.getElementById("folderPicker").addEventListener("change", (e) => {
+            const files = e.target.files
+            if (files.length > 0) {
+                const path = files[0].webkitRelativePath.split("/")[0]
+                document.getElementById("folderInput").value = path
+            }
+        })
+
+        const form = document.getElementById("sendForm")
+        const status = document.getElementById("status")
+        const btn = document.getElementById("sendBtn")
+        const progressContainer = document.getElementById("progressContainer")
+        const circleFill = document.getElementById("circleFill")
+        const circleLabel = document.getElementById("circleLabel")
+        const circumference = 220
+
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100) * circumference
+            circleFill.style.strokeDashoffset = offset
+            circleLabel.textContent = percent + "%"
+        }
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault()
+            btn.disabled = true
+            btn.textContent = "Sending..."
+            status.textContent = ""
+            progressContainer.style.display = "flex"
+            setProgress(0)
+
+            let progress = 0
+            const interval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 5
+                    setProgress(progress)
+                }
+            }, 200)
+
+            const response = await fetch("/send", {
+                method: "POST",
+                body: new FormData(form)
+            })
+            const message = await response.text()
+
+            clearInterval(interval)
+            setProgress(100)
+            status.textContent = message
+            btn.disabled = false
+            btn.textContent = "Send"
+        })
+    </script>
+</body>
+</html>

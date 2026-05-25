@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -55,8 +56,8 @@ func compress(folder, password string) {
 	zipWriter.Flush()
 }
 
-func decompress(outputFolder, password string) {
-	compressed, err := zip.OpenReader("./main.zip")
+func decompress(zipPath, outputFolder, password string) {
+	compressed, err := zip.OpenReader(zipPath)
 	if err != nil {
 		log.Fatalln("error decompressing zip", err)
 	}
@@ -101,40 +102,43 @@ func openPort(outputFolder, password string) {
 	handleConnection(conn, outputFolder, password)
 }
 
-func send(serverAdress, zipPath string) {
+func send(serverAdress, zipPath string) error {
 	conn, err := net.Dial("tcp", serverAdress)
 	if err != nil {
-		log.Fatalln("error dialing server", err)
+		return fmt.Errorf("could not connect to server: %w", err)
 	}
 	defer conn.Close()
 
 	zipFile, err := os.Open(zipPath)
 	if err != nil {
-		log.Fatalln("error opening zip on send func", err)
+		return fmt.Errorf("could not open zip: %w", err)
 	}
 	defer zipFile.Close()
 
 	io.Copy(conn, zipFile)
+	return nil
 }
 
 func handleConnection(conn net.Conn, outputFolder, password string) {
 	defer conn.Close()
 
-	zipFile, err := os.Create("./main.zip")
+	zipFile, err := os.CreateTemp("", "received-*.zip")
 	if err != nil {
-		log.Fatalln("error creating zip in handleConnection", err)
+		log.Fatalln("error creating temp zip in handleConnection", err)
 	}
-	defer zipFile.Close()
+	zipPath := zipFile.Name()
+	defer os.Remove(zipPath)
 
 	io.Copy(zipFile, conn)
 	zipFile.Close()
 
-	decompress(outputFolder, password)
+	decompress(zipPath, outputFolder, password)
 }
 
 func main() {
 	http.HandleFunc("/send", handleSend)
 	http.HandleFunc("/read", handleRead)
+	http.Handle("/", http.FileServer(http.Dir("./web")))
 	http.ListenAndServe(":3030", nil)
 }
 
@@ -144,9 +148,11 @@ func handleSend(w http.ResponseWriter, r *http.Request) {
 	serverAddr := r.FormValue("serverAddr")
 
 	compress(folder, password)
-	send(serverAddr, "./main.zip")
+	if err := send(serverAddr, "./main.zip"); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Write([]byte("transfer complete!"))
-
 }
 
 func handleRead(w http.ResponseWriter, r *http.Request) {
