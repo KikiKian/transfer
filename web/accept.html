@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Receive</title>
+    <title>Accept</title>
     <style>
         * {
             box-sizing: border-box;
@@ -163,15 +163,16 @@
 </head>
 <body>
     <div class="card">
-        <h1>Receive Files</h1>
-        <form id="receiveForm">
+        <h1>Accept Files</h1>
+        <p id="ipInfo" style="font-size: 12px; color: #555; margin-bottom: 16px;">Your IP: <span id="localIP" style="color: #c4622d;">detecting...</span>:8080</p>
+        <form id="acceptForm">
             <div class="folder-row">
                 <input type="text" name="outputFolder" id="folderInput" placeholder="Output folder path" />
                 <button type="button" class="folder-btn" onclick="document.getElementById('folderPicker').click()">Browse</button>
             </div>
             <input type="file" id="folderPicker" webkitdirectory style="display:none" />
             <input type="password" name="password" placeholder="Password" />
-            <button type="submit" id="receiveBtn">Receive</button>
+            <button type="submit" id="acceptBtn">Receive</button>
         </form>
         <div class="progress-container" id="progressContainer">
             <div class="progress-bar-track">
@@ -184,6 +185,11 @@
     </div>
 
     <script>
+        // Fetch and display local IP
+        fetch("/localip").then(r => r.text()).then(ip => {
+            document.getElementById("localIP").textContent = ip
+        })
+
         // Folder picker — shows folder name in input (browser can't give full path)
         document.getElementById("folderPicker").addEventListener("change", (e) => {
             const files = e.target.files
@@ -193,9 +199,9 @@
             }
         })
 
-        const form = document.getElementById("receiveForm")
+        const form = document.getElementById("acceptForm")
         const status = document.getElementById("status")
-        const btn = document.getElementById("receiveBtn")
+        const btn = document.getElementById("acceptBtn")
         const progressContainer = document.getElementById("progressContainer")
         const progressFill = document.getElementById("progressFill")
         const progressLabel = document.getElementById("progressLabel")
@@ -219,7 +225,7 @@
             progressLabel.textContent = "Done"
             status.textContent = message
             btn.disabled = false
-            btn.textContent = "Receive"
+            btn.textContent = "Accept"
         })
     </script>
 </body>

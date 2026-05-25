@@ -154,6 +154,7 @@ func main() {
 	http.HandleFunc("/send", handleSend)
 	http.HandleFunc("/read", handleRead)
 	http.HandleFunc("/progress", handleProgress)
+	http.HandleFunc("/localip", handleLocalIP)
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 	http.ListenAndServe(":3030", nil)
 }
@@ -177,6 +178,17 @@ func handleRead(w http.ResponseWriter, r *http.Request) {
 
 	go openPort(outputFolder, password)
 	w.Write([]byte("receiving... files will be saved to " + outputFolder))
+}
+
+func handleLocalIP(w http.ResponseWriter, r *http.Request) {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		w.Write([]byte("unknown"))
+		return
+	}
+	defer conn.Close()
+	ip := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	w.Write([]byte(ip))
 }
 
 func handleProgress(w http.ResponseWriter, r *http.Request) {
