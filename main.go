@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/alexmullins/zip"
 )
@@ -29,7 +30,21 @@ func addFileToZip(zipWriter *zip.Writer, filePath, nameInZip, password string) {
 	}
 }
 
+var numFiles int
+var totalFiles int
+
 func compress(folder, password string) {
+	// Count total files first so we can report progress as done/total
+	totalFiles = 0
+	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+		totalFiles++
+		return nil
+	})
+
+	numFiles = 0
 	outputZip, err := os.Create("./main.zip")
 	if err != nil {
 		log.Fatalln("could not create zip file:", err)
@@ -50,6 +65,7 @@ func compress(folder, password string) {
 		}
 
 		addFileToZip(zipWriter, path, nameInZip, password)
+		numFiles++
 		return nil
 	})
 
@@ -85,7 +101,6 @@ func decompress(zipPath, outputFolder, password string) {
 		destination.Close()
 		bytes.Close()
 	}
-
 }
 
 func openPort(outputFolder, password string) {
@@ -138,6 +153,7 @@ func handleConnection(conn net.Conn, outputFolder, password string) {
 func main() {
 	http.HandleFunc("/send", handleSend)
 	http.HandleFunc("/read", handleRead)
+	http.HandleFunc("/progress", handleProgress)
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 	http.ListenAndServe(":3030", nil)
 }
@@ -161,4 +177,19 @@ func handleRead(w http.ResponseWriter, r *http.Request) {
 
 	go openPort(outputFolder, password)
 	w.Write([]byte("receiving... files will be saved to " + outputFolder))
+}
+
+func handleProgress(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+
+	flusher := w.(http.Flusher)
+	for numFiles < totalFiles || totalFiles == 0 {
+		fmt.Fprintf(w, "data: %d/%d\n\n", numFiles, totalFiles)
+		flusher.Flush()
+		time.Sleep(100 * time.Millisecond)
+	}
+	// Send final 100%
+	fmt.Fprintf(w, "data: %d/%d\n\n", totalFiles, totalFiles)
+	flusher.Flush()
 }
