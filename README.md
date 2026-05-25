@@ -47,9 +47,20 @@ ipconfig
 
 Look for something like `192.168.1.x`.
 
-## How it works
+## Tickets
 
-- The folder is walked recursively and each file is added to an encrypted zip using [alexmullins/zip](https://github.com/alexmullins/zip)
-- The zip is streamed over a raw TCP connection to the receiver
-- The receiver decompresses and decrypts the zip, preserving the folder structure
-
+current tickets:
+- [x] Backend (logic in [[transfer backend notes]])
+	- [x] create compressing and decompressing logic
+	- [x] create function to listen on port
+	- [x] create function to dial port
+		- [x] also create `handleConnection func` on server side
+	- [x] logic to stream data through port
+	- [x] create main function to handle everything
+    - [ ] logging
+- [x] UI
+	- [x] Website
+		- [x] Form requests
+		- [x] progress bar
+        - [ ] add visualization of logs (graph)
+	
