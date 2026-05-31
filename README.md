@@ -79,9 +79,23 @@ Watch the progress bar as files upload and transfer across the network.
 		- [x] Form requests
 		- [x] progress bar
         - [x] add visualization of logs (graph)
-	- [GUI]
-		- [ ] connect to main.go
-		- [ ] Design bubbleTea layout with lipgloss for styling
-		- [ ] progress bar
-		- [ ] visualization of logs (graph)
+	- [x] GUI (Bubble Tea)
+		- [x] connect to main.go
+		- [x] Design bubbleTea layout with lipgloss for styling
+		- [x] Start HTTP server automatically
+		- [x] Open browser on selection
+- [x] UX Improvements (Send Page)
+	- [x] Auto-display local IP address
+	- [x] Copy IP to clipboard button
+	- [x] Drag and drop file support
+	- [x] Generate random password button
+	- [x] Format hints for receiver IP
+- [ ] Future Features
+	- [ ] Accept page improvements (similar UX enhancements)
+	- [ ] Better error handling and validation
+	- [ ] Desktop app packaging (.exe, .dmg, .AppImage)
+	- [ ] Resume interrupted transfers
+	- [ ] Support for public networks (hole punching)
+	- [ ] File preview before transfer
+	- [ ] Transfer history/logs
 
