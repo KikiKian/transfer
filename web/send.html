@@ -97,6 +97,26 @@
             margin-top: 8px;
         }
 
+        .copy-btn {
+            padding: 4px 12px;
+            background-color: #404040;
+            border: 1px solid #505050;
+            color: #b0b0b0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .copy-btn:hover {
+            background-color: #505050;
+        }
+
+        .drag-over {
+            background-color: #252525 !important;
+            border-color: #d97706 !important;
+        }
+
         .progress-container {
             display: none;
             margin-top: 28px;
@@ -136,13 +156,13 @@
 <body>
 <div class="container">
     <h1>Send Files</h1>
-    <p>Select files and a password. Enter receiver IP.</p>
+    <p>Your IP: <strong id="myIp">Loading...</strong> <button type="button" class="copy-btn" onclick="copyIP()">Copy</button></p>
 
     <form id="sendForm">
         <div class="form-group">
-            <label>Files</label>
+            <label>Files (Drag & Drop or Browse)</label>
             <div class="input-wrapper">
-                <input type="text" id="folderInput" readonly>
+                <input type="text" id="folderInput" readonly placeholder="Drop files here or click Browse">
                 <button type="button" class="folder-btn"
                         onclick="document.getElementById('folderPicker').click()">
                     Browse
@@ -153,12 +173,15 @@
 
         <div class="form-group">
             <label>Password</label>
-            <input type="password" name="password">
+            <div class="input-wrapper">
+                <input type="password" id="passwordInput" name="password">
+                <button type="button" class="folder-btn" onclick="generatePassword()">Generate</button>
+            </div>
         </div>
 
         <div class="form-group">
-            <label>Receiver IP</label>
-            <input type="text" name="serverAddr">
+            <label>Receiver IP (format: 192.168.1.100:8080)</label>
+            <input type="text" name="serverAddr" placeholder="e.g., 192.168.1.100:8080">
         </div>
 
         <button type="submit">Send</button>
@@ -183,8 +206,66 @@ const graphContainer = document.getElementById("graphContainer");
 const progressContainer = document.getElementById("progressContainer");
 const progressFill = document.getElementById("progressFill");
 const status = document.getElementById("status");
+const folderInput = document.getElementById("folderInput");
+const folderPicker = document.getElementById("folderPicker");
+const passwordInput = document.getElementById("passwordInput");
 
 let chartInstance = null;
+
+// Load local IP on page load
+window.addEventListener("load", async () => {
+    try {
+        const res = await fetch("/localip");
+        const ip = await res.text();
+        document.getElementById("myIp").textContent = ip + ":8080";
+    } catch (e) {
+        console.error("Failed to get local IP:", e);
+    }
+});
+
+// Copy IP to clipboard
+function copyIP() {
+    const ip = document.getElementById("myIp").textContent;
+    navigator.clipboard.writeText(ip).then(() => {
+        alert("IP copied to clipboard!");
+    });
+}
+
+// Generate random password
+function generatePassword() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    passwordInput.value = password;
+}
+
+// Handle drag and drop
+folderPicker.addEventListener("change", (e) => {
+    const files = Array.from(e.target.files);
+    folderInput.value = files.length > 0 ? files.length + " items selected" : "";
+});
+
+const dropZone = document.querySelector(".input-wrapper");
+
+dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("drag-over");
+});
+
+dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("drag-over");
+});
+
+dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("drag-over");
+    
+    const files = Array.from(e.dataTransfer.files);
+    folderPicker.files = e.dataTransfer.files;
+    folderInput.value = files.length > 0 ? files.length + " items selected" : "";
+});
 
 function initChart() {
     const ctx = document.getElementById("logChart").getContext("2d");

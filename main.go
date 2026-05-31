@@ -309,13 +309,13 @@ func handleLocalIP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/send", handleSend)
-	http.HandleFunc("/read", handleRead)
-	http.HandleFunc("/progress", handleProgress)
-	http.HandleFunc("/localip", handleLocalIP)
-	http.HandleFunc("/log", handleLog)
+	choice := ShowMenu()
 
-	http.Handle("/", http.FileServer(http.Dir("./web")))
+	if choice == "" {
+		fmt.Println("No selection made. Exiting.")
+		return
+	}
 
-	http.ListenAndServe(":3030", nil)
+	fmt.Printf("You selected: %s\n\n", choice)
+	startHTTPServer(choice)
 }
