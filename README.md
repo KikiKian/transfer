@@ -2,8 +2,6 @@
 
 Send folders securely between computers on your network. Files are automatically compressed and encrypted with a password before transfer.
 
-**Repository:** https://github.com/kikikian/transfer
-
 ## Requirements
 
 - Go 1.21 or newer

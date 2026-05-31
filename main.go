@@ -34,7 +34,6 @@ var numFiles int
 var totalFiles int
 
 func compress(folder, password string) {
-	// Count total files first so we can report progress as done/total
 	totalFiles = 0
 	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
@@ -160,11 +159,67 @@ func main() {
 }
 
 func handleSend(w http.ResponseWriter, r *http.Request) {
-	folder := r.FormValue("folder")
 	password := r.FormValue("password")
 	serverAddr := r.FormValue("serverAddr")
 
-	compress(folder, password)
+	// Parse multipart form with uploaded files
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "could not parse form: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	outputZip, err := os.Create("./main.zip")
+	if err != nil {
+		http.Error(w, "could not create zip file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer outputZip.Close()
+
+	zipWriter := zip.NewWriter(outputZip)
+	defer zipWriter.Close()
+
+	totalFiles = 0
+	for _, fileHeaders := range r.MultipartForm.File {
+		totalFiles += len(fileHeaders)
+	}
+
+	numFiles = 0
+	for _, fileHeaders := range r.MultipartForm.File {
+		for _, fileHeader := range fileHeaders {
+			file, err := fileHeader.Open()
+			if err != nil {
+				zipWriter.Close()
+				outputZip.Close()
+				http.Error(w, "could not open uploaded file: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			encWriter, err := zipWriter.Encrypt(fileHeader.Filename, password)
+			if err != nil {
+				file.Close()
+				zipWriter.Close()
+				outputZip.Close()
+				http.Error(w, "could not encrypt file in zip: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if _, err := io.Copy(encWriter, file); err != nil {
+				file.Close()
+				zipWriter.Close()
+				outputZip.Close()
+				http.Error(w, "could not write to zip: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			file.Close()
+			numFiles++
+		}
+	}
+
+	zipWriter.Flush()
+	zipWriter.Close()
+	outputZip.Close()
+
 	if err := send(serverAddr, "./main.zip"); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
