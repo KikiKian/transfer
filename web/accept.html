@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Accept</title>
+    <title>Receive</title>
     <style>
         * {
             box-sizing: border-box;
@@ -12,104 +12,161 @@
 
         body {
             background-color: #0a0a0a;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
+            color: #e5e5e5;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
         }
 
         h1 {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 24px;
-            letter-spacing: 0.5px;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ffffff;
         }
 
-        .folder-row {
+        h1 + p {
+            font-size: 15px;
+            color: #b0b0b0;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .ip-display {
+            font-size: 13px;
+            color: #b0b0b0;
+            margin-bottom: 32px;
+            padding: 14px;
+            background-color: #151515;
+            border-left: 3px solid #d97706;
+            border-radius: 4px;
+        }
+
+        #localIP {
+            color: #d97706;
+            font-weight: 600;
+            font-family: 'Monaco', monospace;
+            font-size: 14px;
+        }
+
+        form {
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #a0a0a0;
+            margin-bottom: 6px;
+        }
+
+        .input-wrapper {
             display: flex;
             gap: 8px;
-            margin: 10px 0;
         }
 
-        .folder-row input {
+        .input-wrapper input {
             flex: 1;
-            margin: 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            background-color: #1a1a1a;
+            border: 1px solid #303030;
+            color: #e5e5e5;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        input:focus {
+            border-color: #d97706;
+            background-color: #252525;
+            box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+        }
+
+        input::placeholder {
+            color: #606060;
+        }
+
+        input:disabled {
+            background-color: #1a1a1a;
+            color: #606060;
         }
 
         .folder-btn {
-            padding: 10px 14px;
+            padding: 12px 16px;
             background-color: #1a1a1a;
-            border: 1px solid #333;
-            color: #aaa;
+            border: 1px solid #303030;
+            color: #b0b0b0;
             border-radius: 6px;
             font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
-            transition: border 0.2s, color 0.2s;
-            margin: 0;
+            transition: all 0.2s;
             width: auto;
         }
 
         .folder-btn:hover {
-            border-color: #555;
-            color: white;
+            border-color: #d97706;
+            color: #d97706;
             background-color: #1a1a1a;
-        }
-
-        input {
-            display: block;
-            width: 100%;
-            margin: 10px 0;
-            padding: 10px 14px;
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            color: white;
-            border-radius: 6px;
-            font-size: 14px;
-            outline: none;
-            transition: border 0.2s;
-        }
-
-        input:focus {
-            border-color: #555;
         }
 
         button[type="submit"] {
-            margin-top: 20px;
             width: 100%;
-            padding: 11px;
-            background-color: #c4622d;
+            padding: 14px;
+            background-color: #d97706;
             color: white;
             border: none;
             border-radius: 6px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            margin-top: 8px;
         }
 
         button[type="submit"]:hover {
-            background-color: #ad5427;
+            background-color: #b45309;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(217, 119, 6, 0.2);
         }
 
         button[type="submit"]:disabled {
-            background-color: #444;
-            color: #888;
+            background-color: #d0ccc5;
+            color: #7a7a7a;
             cursor: not-allowed;
+            transform: none;
         }
 
         .progress-container {
             display: none;
-            margin-top: 20px;
+            margin-top: 28px;
         }
 
         .progress-bar-track {
             width: 100%;
-            height: 4px;
-            background-color: #222;
+            height: 3px;
+            background-color: #303030;
             border-radius: 2px;
             overflow: hidden;
         }
@@ -117,71 +174,82 @@
         .progress-bar-fill {
             height: 100%;
             width: 0%;
-            background-color: #c4622d;
+            background: linear-gradient(90deg, #d97706, #f59e0b);
             border-radius: 2px;
             transition: width 0.3s ease;
         }
 
         .progress-label {
-            margin-top: 8px;
-            font-size: 12px;
-            color: #555;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #808080;
             text-align: right;
         }
 
         #status {
-            margin-top: 14px;
-            font-size: 13px;
-            color: #666;
-            min-height: 18px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #b0b0b0;
+            min-height: 20px;
             text-align: center;
         }
 
-        a {
+        .nav-link {
             display: block;
-            margin-top: 20px;
+            margin-top: 32px;
             text-align: center;
-            color: #444;
-            font-size: 13px;
+            color: #808080;
+            font-size: 14px;
             text-decoration: none;
             transition: color 0.2s;
         }
 
-        a:hover {
-            color: #888;
+        .nav-link:hover {
+            color: #d97706;
         }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Accept Files</h1>
-        <p id="ipInfo" style="font-size: 12px; color: #555; margin-bottom: 16px;">Your IP: <span id="localIP" style="color: #c4622d;">detecting...</span>:8080</p>
+    <div class="container">
+        <h1>Receive Files</h1>
+        <p>Share your IP with the sender. Set a password and wait for the transfer.</p>
+
+        <div class="ip-display">Your IP: <span id="localIP">detecting...</span>:8080</div>
+
         <form id="acceptForm">
-            <div class="folder-row">
-                <input type="text" name="outputFolder" id="folderInput" placeholder="Output folder path" />
-                <button type="button" class="folder-btn" onclick="document.getElementById('folderPicker').click()">Browse</button>
+            <div class="form-group">
+                <label>Files destination</label>
+                <div class="input-wrapper">
+                    <input type="text" id="folderInput" placeholder="Select folder..." readonly />
+                    <button type="button" class="folder-btn" onclick="document.getElementById('folderPicker').click()">Browse</button>
+                </div>
+                <input type="file" id="folderPicker" webkitdirectory style="display:none" />
             </div>
-            <input type="file" id="folderPicker" webkitdirectory style="display:none" />
-            <input type="password" name="password" placeholder="Password" />
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Enter the shared password" />
+            </div>
+
             <button type="submit" id="acceptBtn">Receive</button>
         </form>
+
         <div class="progress-container" id="progressContainer">
             <div class="progress-bar-track">
                 <div class="progress-bar-fill" id="progressFill"></div>
             </div>
             <div class="progress-label" id="progressLabel">Waiting...</div>
         </div>
+
         <p id="status"></p>
-        <a href="/send.html">Go to Send</a>
+        <a href="/web/send.html" class="nav-link">← Send files instead</a>
     </div>
 
     <script>
-        // Fetch and display local IP
         fetch("/localip").then(r => r.text()).then(ip => {
             document.getElementById("localIP").textContent = ip
         })
 
-        // Folder picker — shows folder name in input (browser can't give full path)
         document.getElementById("folderPicker").addEventListener("change", (e) => {
             const files = e.target.files
             if (files.length > 0) {
@@ -200,7 +268,7 @@
         form.addEventListener("submit", async (e) => {
             e.preventDefault()
             btn.disabled = true
-            btn.textContent = "Waiting..."
+            btn.textContent = "Listening..."
             status.textContent = ""
             progressContainer.style.display = "block"
             progressFill.style.width = "0%"
@@ -213,10 +281,10 @@
             const message = await response.text()
 
             progressFill.style.width = "100%"
-            progressLabel.textContent = "Done"
+            progressLabel.textContent = "Complete"
             status.textContent = message
             btn.disabled = false
-            btn.textContent = "Accept"
+            btn.textContent = "Receive"
         })
     </script>
 </body>

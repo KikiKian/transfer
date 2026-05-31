@@ -8,10 +8,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/alexmullins/zip"
 )
+
+var transferLog []map[string]interface{}
+var transferLogMutex sync.Mutex
 
 func addFileToZip(zipWriter *zip.Writer, filePath, nameInZip, password string) {
 	f, err := os.Open(filePath)
@@ -154,13 +158,39 @@ func main() {
 	http.HandleFunc("/read", handleRead)
 	http.HandleFunc("/progress", handleProgress)
 	http.HandleFunc("/localip", handleLocalIP)
+	http.HandleFunc("/log", handleLog)
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 	http.ListenAndServe(":3030", nil)
+}
+
+func handleLog(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	transferLogMutex.Lock()
+	defer transferLogMutex.Unlock()
+
+	if len(transferLog) == 0 {
+		w.Write([]byte("[]"))
+		return
+	}
+
+	fmt.Fprintf(w, "[")
+	for i, entry := range transferLog {
+		if i > 0 {
+			fmt.Fprintf(w, ",")
+		}
+		fmt.Fprintf(w, "[%d,%d]", entry["percent"], entry["time"])
+	}
+	fmt.Fprintf(w, "]")
 }
 
 func handleSend(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	serverAddr := r.FormValue("serverAddr")
+
+	// Reset log for this transfer
+	transferLogMutex.Lock()
+	transferLog = []map[string]interface{}{}
+	transferLogMutex.Unlock()
 
 	// Parse multipart form with uploaded files
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
@@ -251,12 +281,36 @@ func handleProgress(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 
 	flusher := w.(http.Flusher)
+	lastLogged := 0
 	for numFiles < totalFiles || totalFiles == 0 {
+		percent := 0
+		if totalFiles > 0 {
+			percent = (numFiles * 100) / totalFiles
+		}
+
+		// Log only if percent changed
+		if percent != lastLogged {
+			transferLogMutex.Lock()
+			transferLog = append(transferLog, map[string]interface{}{
+				"percent": percent,
+				"time":    time.Now().Unix(),
+			})
+			transferLogMutex.Unlock()
+			lastLogged = percent
+		}
+
 		fmt.Fprintf(w, "data: %d/%d\n\n", numFiles, totalFiles)
 		flusher.Flush()
 		time.Sleep(100 * time.Millisecond)
 	}
 	// Send final 100%
+	transferLogMutex.Lock()
+	transferLog = append(transferLog, map[string]interface{}{
+		"percent": 100,
+		"time":    time.Now().Unix(),
+	})
+	transferLogMutex.Unlock()
+
 	fmt.Fprintf(w, "data: %d/%d\n\n", totalFiles, totalFiles)
 	flusher.Flush()
 }

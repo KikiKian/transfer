@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,120 +13,214 @@
 
         body {
             background-color: #0a0a0a;
-            color: white;
-            font-family: monospace;
+            color: #e5e5e5;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
+            padding: 20px;
         }
 
         .wrap {
-            width: 380px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
         }
 
         h1 {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 6px;
-            color: #c4622d;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ffffff;
+            letter-spacing: -1px;
         }
 
         p {
-            font-size: 13px;
-            color: #555;
-            line-height: 1.7;
-            margin-bottom: 32px;
-        }
-
-        p.note {
-            font-size: 12px;
-            color: #444;
-            margin-top: -20px;
+            font-size: 16px;
+            color: #b0b0b0;
+            line-height: 1.6;
             margin-bottom: 24px;
         }
 
+        p.note {
+            font-size: 14px;
+            color: #808080;
+            margin-bottom: 36px;
+            font-style: italic;
+        }
+
         .cmd {
-            color: #c4622d;
+            background-color: #f0f0eb;
+            color: #d97706;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: Monaco, monospace;
+            font-size: 14px;
         }
 
         .buttons {
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 12px;
             margin-bottom: 32px;
         }
 
         a.btn {
-            flex: 1;
-            padding: 11px;
-            font-size: 13px;
-            font-family: monospace;
-            font-weight: bold;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
             text-decoration: none;
             text-align: center;
-            border: 1px solid #333;
-            transition: border-color 0.2s, color 0.2s, background 0.2s;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
 
-        a.btn-primary {
-            background-color: #c4622d;
+        .btn-primary {
+            background-color: #d97706;
             color: white;
-            border-color: #c4622d;
         }
 
-        a.btn-primary:hover {
-            background-color: #ad5427;
-            border-color: #ad5427;
+        .btn-primary:hover {
+            background-color: #b45309;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(217, 119, 6, 0.2);
         }
 
-        a.btn-secondary {
+        .btn-secondary {
             background-color: transparent;
-            color: #666;
+            color: #b0b0b0;
+            border: 2px solid #404040;
         }
 
-        a.btn-secondary:hover {
-            color: white;
-            border-color: #666;
+        .btn-secondary:hover {
+            color: #ffffff;
+            border-color: #d97706;
         }
 
         .links {
-            border-top: 1px solid #1e1e1e;
-            padding-top: 20px;
+            border-top: 1px solid #2a2a2a;
+            padding-top: 24px;
             display: flex;
-            gap: 20px;
+            justify-content: center;
+            gap: 24px;
         }
 
         .links a {
-            font-size: 12px;
-            color: #c4622d;
+            font-size: 13px;
+            color: #808080;
             text-decoration: none;
-            opacity: 0.7;
-            transition: opacity 0.2s;
+            transition: color 0.2s;
         }
 
         .links a:hover {
-            opacity: 1;
+            color: #d97706;
+        }
+
+        .instructions {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #2a2a2a;
+            text-align: left;
+        }
+
+        .instructions h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #b0b0b0;
+            line-height: 1.8;
+            font-size: 14px;
+        }
+
+        .instructions li {
+            margin-bottom: 12px;
+        }
+
+        .instructions strong {
+            color: #d97706;
         }
     </style>
 </head>
 <body>
     <div class="wrap">
         <h1>Transfer</h1>
-        <p>Send folders between computers on your network. Files are compressed and encrypted with a password you choose.</p>
-        <p class="note">Runs locally — clone the repo and run <span class="cmd">go run main.go</span> to get started.</p>
+
+        <p>Send folders between computers on your network with encryption.</p>
+
+        <p class="note">
+            Files compress and encrypt automatically.
+            Run <span class="cmd">go run main.go</span> locally.
+        </p>
+
         <div class="buttons">
-            <a href="https://github.com/kikikian/transfer" class="btn btn-primary" target="_blank">Get it on GitHub</a>
-            <a href="https://codeberg.org/kikikian/transfer" class="btn btn-secondary" target="_blank">Codeberg</a>
+            <a href="/send.html" class="btn btn-primary">Send Files</a>
+            <a href="/accept.html" class="btn btn-primary">Receive Files</a>
+            <a href="https://github.com/kikikian/transfer"
+               class="btn btn-secondary"
+               target="_blank"
+               rel="noopener noreferrer">
+                View on GitHub
+            </a>
         </div>
+
         <div class="links">
-            <a href="https://github.com/kikikian" target="_blank">github.com/kikikian</a>
-            <a href="https://codeberg.org/kikikian" target="_blank">codeberg.org/kikikian</a>
+            <a href="https://github.com/kikikian"
+               target="_blank"
+               rel="noopener noreferrer">
+                GitHub
+            </a>
+
+            <a href="https://codeberg.org/kikikian"
+               target="_blank"
+               rel="noopener noreferrer">
+                Codeberg
+            </a>
+        </div>
+
+        <div class="instructions">
+            <h2>How to Use</h2>
+
+            <ol>
+                <li>
+                    <strong>On the receiver's computer:</strong>
+                    Click "Receive Files", select a destination folder,
+                    enter a password, and click Receive.
+                </li>
+
+                <li>
+                    <strong>Copy the receiver's IP address</strong>
+                    shown on the Receive page
+                    (for example, 192.168.1.45:8080).
+                </li>
+
+                <li>
+                    <strong>On the sender's computer:</strong>
+                    Click "Send Files", select files to transfer,
+                    enter the same password, and paste the receiver's IP.
+                </li>
+
+                <li>
+                    <strong>Click Send</strong>
+                    and wait for the transfer to complete.
+                    Progress will display in real time.
+                </li>
+
+                <li>
+                    <strong>Files will be decrypted</strong>
+                    and saved automatically to the receiver's
+                    destination folder.
+                </li>
+            </ol>
         </div>
     </div>
 </body>
 </html>
+```
