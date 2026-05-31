@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -14,8 +15,16 @@ import (
 	"github.com/alexmullins/zip"
 )
 
-var transferLog []map[string]interface{}
+type LogEntry struct {
+	Percent int   `json:"percent"`
+	Time    int64 `json:"time"`
+}
+
+var transferLog []LogEntry
 var transferLogMutex sync.Mutex
+
+var numFiles int
+var totalFiles int
 
 func addFileToZip(zipWriter *zip.Writer, filePath, nameInZip, password string) {
 	f, err := os.Open(filePath)
@@ -32,92 +41,6 @@ func addFileToZip(zipWriter *zip.Writer, filePath, nameInZip, password string) {
 	if _, err := io.Copy(w, f); err != nil {
 		log.Fatalf("could not write %s to zip: %v", nameInZip, err)
 	}
-}
-
-var numFiles int
-var totalFiles int
-
-func compress(folder, password string) {
-	totalFiles = 0
-	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
-			return err
-		}
-		totalFiles++
-		return nil
-	})
-
-	numFiles = 0
-	outputZip, err := os.Create("./main.zip")
-	if err != nil {
-		log.Fatalln("could not create zip file:", err)
-	}
-	defer outputZip.Close()
-
-	zipWriter := zip.NewWriter(outputZip)
-	defer zipWriter.Close()
-
-	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
-			return err
-		}
-
-		nameInZip, err := filepath.Rel(folder, path)
-		if err != nil {
-			return err
-		}
-
-		addFileToZip(zipWriter, path, nameInZip, password)
-		numFiles++
-		return nil
-	})
-
-	zipWriter.Flush()
-}
-
-func decompress(zipPath, outputFolder, password string) {
-	compressed, err := zip.OpenReader(zipPath)
-	if err != nil {
-		log.Fatalln("error decompressing zip", err)
-	}
-	defer compressed.Close()
-
-	for _, file := range compressed.File {
-		file.SetPassword(password)
-
-		destPath := filepath.Join(outputFolder, file.Name)
-
-		os.MkdirAll(filepath.Dir(destPath), os.ModePerm)
-		bytes, err := file.Open()
-
-		if err != nil {
-			log.Fatalln("error opening file", err)
-		}
-
-		destination, err := os.Create(destPath)
-		if err != nil {
-			log.Fatalln("error creating destination path", err)
-		}
-
-		io.Copy(destination, bytes)
-
-		destination.Close()
-		bytes.Close()
-	}
-}
-
-func openPort(outputFolder, password string) {
-	ln, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		log.Fatalln("error listening on port", err)
-	}
-	defer ln.Close()
-
-	conn, err := ln.Accept()
-	if err != nil {
-		log.Fatalln("error accepting connection", err)
-	}
-	handleConnection(conn, outputFolder, password)
 }
 
 func send(serverAdress, zipPath string) error {
@@ -137,70 +60,131 @@ func send(serverAdress, zipPath string) error {
 	return nil
 }
 
+func openPort(outputFolder, password string) {
+	ln, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		log.Fatalln("error listening on port", err)
+	}
+	defer ln.Close()
+
+	conn, err := ln.Accept()
+	if err != nil {
+		log.Fatalln("error accepting connection", err)
+	}
+
+	handleConnection(conn, outputFolder, password)
+}
+
 func handleConnection(conn net.Conn, outputFolder, password string) {
 	defer conn.Close()
 
 	zipFile, err := os.CreateTemp("", "received-*.zip")
 	if err != nil {
-		log.Fatalln("error creating temp zip in handleConnection", err)
+		log.Fatalln("error creating temp zip", err)
 	}
-	zipPath := zipFile.Name()
-	defer os.Remove(zipPath)
+	defer os.Remove(zipFile.Name())
 
 	io.Copy(zipFile, conn)
 	zipFile.Close()
 
-	decompress(zipPath, outputFolder, password)
+	decompress(zipFile.Name(), outputFolder, password)
 }
 
-func main() {
-	http.HandleFunc("/send", handleSend)
-	http.HandleFunc("/read", handleRead)
-	http.HandleFunc("/progress", handleProgress)
-	http.HandleFunc("/localip", handleLocalIP)
-	http.HandleFunc("/log", handleLog)
-	http.Handle("/", http.FileServer(http.Dir("./web")))
-	http.ListenAndServe(":3030", nil)
-}
-
-func handleLog(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	transferLogMutex.Lock()
-	defer transferLogMutex.Unlock()
-
-	if len(transferLog) == 0 {
-		w.Write([]byte("[]"))
-		return
+func decompress(zipPath, outputFolder, password string) {
+	compressed, err := zip.OpenReader(zipPath)
+	if err != nil {
+		log.Fatalln("error decompressing zip", err)
 	}
+	defer compressed.Close()
 
-	fmt.Fprintf(w, "[")
-	for i, entry := range transferLog {
-		if i > 0 {
-			fmt.Fprintf(w, ",")
+	for _, file := range compressed.File {
+		file.SetPassword(password)
+
+		destPath := filepath.Join(outputFolder, file.Name)
+		os.MkdirAll(filepath.Dir(destPath), os.ModePerm)
+
+		bytes, err := file.Open()
+		if err != nil {
+			log.Fatalln("error opening file", err)
 		}
-		fmt.Fprintf(w, "[%d,%d]", entry["percent"], entry["time"])
+
+		destination, err := os.Create(destPath)
+		if err != nil {
+			log.Fatalln("error creating destination", err)
+		}
+
+		io.Copy(destination, bytes)
+
+		destination.Close()
+		bytes.Close()
 	}
-	fmt.Fprintf(w, "]")
+}
+
+func compress(folder, password string) {
+	totalFiles = 0
+
+	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() {
+			totalFiles++
+		}
+		return nil
+	})
+
+	numFiles = 0
+
+	outputZip, err := os.Create("./main.zip")
+	if err != nil {
+		log.Fatalln("could not create zip file:", err)
+	}
+	defer outputZip.Close()
+
+	zipWriter := zip.NewWriter(outputZip)
+	defer zipWriter.Close()
+
+	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+
+		nameInZip, _ := filepath.Rel(folder, path)
+		addFileToZip(zipWriter, path, nameInZip, password)
+
+		numFiles++
+
+		percent := 0
+		if totalFiles > 0 {
+			percent = (numFiles * 100) / totalFiles
+		}
+
+		transferLogMutex.Lock()
+		transferLog = append(transferLog, LogEntry{
+			Percent: percent,
+			Time:    time.Now().Unix(),
+		})
+		transferLogMutex.Unlock()
+
+		return nil
+	})
+
+	zipWriter.Flush()
 }
 
 func handleSend(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	serverAddr := r.FormValue("serverAddr")
 
-	// Reset log for this transfer
 	transferLogMutex.Lock()
-	transferLog = []map[string]interface{}{}
+	transferLog = []LogEntry{}
 	transferLogMutex.Unlock()
 
-	// Parse multipart form with uploaded files
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		http.Error(w, "could not parse form: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	outputZip, err := os.Create("./main.zip")
 	if err != nil {
-		http.Error(w, "could not create zip file: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer outputZip.Close()
@@ -209,52 +193,99 @@ func handleSend(w http.ResponseWriter, r *http.Request) {
 	defer zipWriter.Close()
 
 	totalFiles = 0
-	for _, fileHeaders := range r.MultipartForm.File {
-		totalFiles += len(fileHeaders)
+	for _, files := range r.MultipartForm.File {
+		totalFiles += len(files)
 	}
 
 	numFiles = 0
-	for _, fileHeaders := range r.MultipartForm.File {
-		for _, fileHeader := range fileHeaders {
-			file, err := fileHeader.Open()
+
+	for _, files := range r.MultipartForm.File {
+		for _, fh := range files {
+
+			file, err := fh.Open()
 			if err != nil {
-				zipWriter.Close()
-				outputZip.Close()
-				http.Error(w, "could not open uploaded file: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, err.Error(), 500)
 				return
 			}
 
-			encWriter, err := zipWriter.Encrypt(fileHeader.Filename, password)
+			writer, err := zipWriter.Encrypt(fh.Filename, password)
 			if err != nil {
-				file.Close()
-				zipWriter.Close()
-				outputZip.Close()
-				http.Error(w, "could not encrypt file in zip: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, err.Error(), 500)
 				return
 			}
 
-			if _, err := io.Copy(encWriter, file); err != nil {
-				file.Close()
-				zipWriter.Close()
-				outputZip.Close()
-				http.Error(w, "could not write to zip: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-
+			io.Copy(writer, file)
 			file.Close()
+
 			numFiles++
+
+			percent := 0
+			if totalFiles > 0 {
+				percent = (numFiles * 100) / totalFiles
+			}
+
+			transferLogMutex.Lock()
+			transferLog = append(transferLog, LogEntry{
+				Percent: percent,
+				Time:    time.Now().Unix(),
+			})
+			transferLogMutex.Unlock()
 		}
 	}
 
-	zipWriter.Flush()
 	zipWriter.Close()
 	outputZip.Close()
 
 	if err := send(serverAddr, "./main.zip"); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), 500)
 		return
 	}
+
 	w.Write([]byte("transfer complete!"))
+}
+
+func handleLog(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	transferLogMutex.Lock()
+	defer transferLogMutex.Unlock()
+
+	json.NewEncoder(w).Encode(transferLog)
+}
+
+func handleProgress(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+
+	flusher := w.(http.Flusher)
+	last := 0
+
+	for numFiles < totalFiles || totalFiles == 0 {
+
+		percent := 0
+		if totalFiles > 0 {
+			percent = (numFiles * 100) / totalFiles
+		}
+
+		if percent != last {
+			transferLogMutex.Lock()
+			transferLog = append(transferLog, LogEntry{
+				Percent: percent,
+				Time:    time.Now().Unix(),
+			})
+			transferLogMutex.Unlock()
+
+			last = percent
+		}
+
+		fmt.Fprintf(w, "data: %d/%d\n\n", numFiles, totalFiles)
+		flusher.Flush()
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	fmt.Fprintf(w, "data: %d/%d\n\n", totalFiles, totalFiles)
+	flusher.Flush()
 }
 
 func handleRead(w http.ResponseWriter, r *http.Request) {
@@ -272,45 +303,19 @@ func handleLocalIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+
 	ip := conn.LocalAddr().(*net.UDPAddr).IP.String()
 	w.Write([]byte(ip))
 }
 
-func handleProgress(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
+func main() {
+	http.HandleFunc("/send", handleSend)
+	http.HandleFunc("/read", handleRead)
+	http.HandleFunc("/progress", handleProgress)
+	http.HandleFunc("/localip", handleLocalIP)
+	http.HandleFunc("/log", handleLog)
 
-	flusher := w.(http.Flusher)
-	lastLogged := 0
-	for numFiles < totalFiles || totalFiles == 0 {
-		percent := 0
-		if totalFiles > 0 {
-			percent = (numFiles * 100) / totalFiles
-		}
+	http.Handle("/", http.FileServer(http.Dir("./web")))
 
-		// Log only if percent changed
-		if percent != lastLogged {
-			transferLogMutex.Lock()
-			transferLog = append(transferLog, map[string]interface{}{
-				"percent": percent,
-				"time":    time.Now().Unix(),
-			})
-			transferLogMutex.Unlock()
-			lastLogged = percent
-		}
-
-		fmt.Fprintf(w, "data: %d/%d\n\n", numFiles, totalFiles)
-		flusher.Flush()
-		time.Sleep(100 * time.Millisecond)
-	}
-	// Send final 100%
-	transferLogMutex.Lock()
-	transferLog = append(transferLog, map[string]interface{}{
-		"percent": 100,
-		"time":    time.Now().Unix(),
-	})
-	transferLogMutex.Unlock()
-
-	fmt.Fprintf(w, "data: %d/%d\n\n", totalFiles, totalFiles)
-	flusher.Flush()
+	http.ListenAndServe(":3030", nil)
 }

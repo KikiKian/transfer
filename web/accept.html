@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Receive</title>
+
+    <!-- FIX: Chart.js added -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -34,7 +38,7 @@
             color: #ffffff;
         }
 
-        h1 + p {
+        p {
             font-size: 15px;
             color: #b0b0b0;
             margin-bottom: 32px;
@@ -54,12 +58,7 @@
         #localIP {
             color: #d97706;
             font-weight: 600;
-            font-family: 'Monaco', monospace;
-            font-size: 14px;
-        }
-
-        form {
-            margin-bottom: 32px;
+            font-family: monospace;
         }
 
         .form-group {
@@ -74,15 +73,6 @@
             margin-bottom: 6px;
         }
 
-        .input-wrapper {
-            display: flex;
-            gap: 8px;
-        }
-
-        .input-wrapper input {
-            flex: 1;
-        }
-
         input {
             width: 100%;
             padding: 12px 14px;
@@ -91,71 +81,17 @@
             color: #e5e5e5;
             border-radius: 6px;
             font-size: 14px;
-            outline: none;
-            transition: all 0.2s;
-            font-family: inherit;
         }
 
-        input:focus {
-            border-color: #d97706;
-            background-color: #252525;
-            box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
-        }
-
-        input::placeholder {
-            color: #606060;
-        }
-
-        input:disabled {
-            background-color: #1a1a1a;
-            color: #606060;
-        }
-
-        .folder-btn {
-            padding: 12px 16px;
-            background-color: #1a1a1a;
-            border: 1px solid #303030;
-            color: #b0b0b0;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s;
-            width: auto;
-        }
-
-        .folder-btn:hover {
-            border-color: #d97706;
-            color: #d97706;
-            background-color: #1a1a1a;
-        }
-
-        button[type="submit"] {
+        button {
             width: 100%;
             padding: 14px;
-            background-color: #d97706;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
             margin-top: 8px;
-        }
-
-        button[type="submit"]:hover {
-            background-color: #b45309;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 12px rgba(217, 119, 6, 0.2);
-        }
-
-        button[type="submit"]:disabled {
-            background-color: #d0ccc5;
-            color: #7a7a7a;
-            cursor: not-allowed;
-            transform: none;
+            background-color: #d97706;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
         .progress-container {
@@ -167,125 +103,174 @@
             width: 100%;
             height: 3px;
             background-color: #303030;
-            border-radius: 2px;
-            overflow: hidden;
         }
 
         .progress-bar-fill {
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg, #d97706, #f59e0b);
-            border-radius: 2px;
-            transition: width 0.3s ease;
         }
 
-        .progress-label {
-            margin-top: 10px;
-            font-size: 13px;
-            color: #808080;
-            text-align: right;
+        /* ================= GRAPH ADDED ================= */
+        .graph-container {
+            display: none;
+            margin-top: 24px;
+            padding: 16px;
+            background-color: #121212;
+            border: 1px solid #252525;
+            border-radius: 8px;
+            height: 300px;
         }
 
-        #status {
-            margin-top: 16px;
-            font-size: 14px;
-            color: #b0b0b0;
-            min-height: 20px;
-            text-align: center;
-        }
-
-        .nav-link {
-            display: block;
-            margin-top: 32px;
-            text-align: center;
-            color: #808080;
-            font-size: 14px;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .nav-link:hover {
-            color: #d97706;
+        #logChart {
+            width: 100% !important;
+            height: 100% !important;
         }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <h1>Receive Files</h1>
-        <p>Share your IP with the sender. Set a password and wait for the transfer.</p>
+<div class="container">
+    <h1>Receive Files</h1>
+    <p>Share your IP with the sender. Set password and wait.</p>
 
-        <div class="ip-display">Your IP: <span id="localIP">detecting...</span>:8080</div>
-
-        <form id="acceptForm">
-            <div class="form-group">
-                <label>Files destination</label>
-                <div class="input-wrapper">
-                    <input type="text" id="folderInput" placeholder="Select folder..." readonly />
-                    <button type="button" class="folder-btn" onclick="document.getElementById('folderPicker').click()">Browse</button>
-                </div>
-                <input type="file" id="folderPicker" webkitdirectory style="display:none" />
-            </div>
-
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Enter the shared password" />
-            </div>
-
-            <button type="submit" id="acceptBtn">Receive</button>
-        </form>
-
-        <div class="progress-container" id="progressContainer">
-            <div class="progress-bar-track">
-                <div class="progress-bar-fill" id="progressFill"></div>
-            </div>
-            <div class="progress-label" id="progressLabel">Waiting...</div>
-        </div>
-
-        <p id="status"></p>
-        <a href="/web/send.html" class="nav-link">← Send files instead</a>
+    <div class="ip-display">
+        Your IP: <span id="localIP">detecting...</span>:8080
     </div>
 
-    <script>
-        fetch("/localip").then(r => r.text()).then(ip => {
-            document.getElementById("localIP").textContent = ip
-        })
+    <form id="acceptForm">
+        <div class="form-group">
+            <label>Files destination</label>
+            <input type="text" name="outputFolder" placeholder="Folder name">
+        </div>
 
-        document.getElementById("folderPicker").addEventListener("change", (e) => {
-            const files = e.target.files
-            if (files.length > 0) {
-                const path = files[0].webkitRelativePath.split("/")[0]
-                document.getElementById("folderInput").value = path
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password">
+        </div>
+
+        <button type="submit" id="acceptBtn">Receive</button>
+    </form>
+
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <!-- ================= GRAPH ADDED ================= -->
+    <div class="graph-container" id="graphContainer">
+        <canvas id="logChart"></canvas>
+    </div>
+
+    <p id="status"></p>
+</div>
+
+<script>
+fetch("/localip")
+    .then(r => r.text())
+    .then(ip => {
+        document.getElementById("localIP").textContent = ip;
+    });
+
+const form = document.getElementById("acceptForm");
+const btn = document.getElementById("acceptBtn");
+const status = document.getElementById("status");
+
+const progressContainer = document.getElementById("progressContainer");
+const progressFill = document.getElementById("progressFill");
+
+const graphContainer = document.getElementById("graphContainer");
+
+let chartInstance = null;
+
+/* ================= GRAPH LOGIC ================= */
+
+function initChart() {
+    const ctx = document.getElementById("logChart").getContext("2d");
+
+    if (chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                borderColor: "#d97706",
+                backgroundColor: "rgba(217,119,6,0.15)",
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: "#888" } },
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: { color: "#888" }
+                }
             }
-        })
+        }
+    });
+}
 
-        const form = document.getElementById("acceptForm")
-        const status = document.getElementById("status")
-        const btn = document.getElementById("acceptBtn")
-        const progressContainer = document.getElementById("progressContainer")
-        const progressFill = document.getElementById("progressFill")
-        const progressLabel = document.getElementById("progressLabel")
+/* FIX: live log polling */
+async function fetchLogData() {
+    try {
+        const res = await fetch("/log");
+        const logs = await res.json();
 
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault()
-            btn.disabled = true
-            btn.textContent = "Listening..."
-            status.textContent = ""
-            progressContainer.style.display = "block"
-            progressFill.style.width = "0%"
-            progressLabel.textContent = "Waiting for connection..."
+        if (!chartInstance) return;
 
-            const response = await fetch("/read", {
-                method: "POST",
-                body: new FormData(form)
-            })
-            const message = await response.text()
+        chartInstance.data.labels =
+            logs.map(l => new Date(l.time * 1000).toLocaleTimeString());
 
-            progressFill.style.width = "100%"
-            progressLabel.textContent = "Complete"
-            status.textContent = message
-            btn.disabled = false
-            btn.textContent = "Receive"
-        })
-    </script>
+        chartInstance.data.datasets[0].data =
+            logs.map(l => l.percent);
+
+        chartInstance.update("none");
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+/* ================= FORM ================= */
+
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    btn.disabled = true;
+    btn.textContent = "Listening...";
+
+    progressContainer.style.display = "block";
+    graphContainer.style.display = "block";
+
+    initChart();
+
+    const logInterval = setInterval(fetchLogData, 1000);
+
+    const response = await fetch("/read", {
+        method: "POST",
+        body: new FormData(form)
+    });
+
+    const message = await response.text();
+
+    clearInterval(logInterval);
+    await fetchLogData();
+
+    progressFill.style.width = "100%";
+    status.textContent = message;
+
+    btn.disabled = false;
+    btn.textContent = "Receive";
+});
+</script>
 </body>
 </html>

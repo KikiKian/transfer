@@ -66,7 +66,6 @@ Watch the progress bar as files upload and transfer across the network.
 
 ## Tickets
 
-current tickets:
 - [x] Backend (logic in [[transfer backend notes]])
 	- [x] create compressing and decompressing logic
 	- [x] create function to listen on port
@@ -74,10 +73,15 @@ current tickets:
 		- [x] also create `handleConnection func` on server side
 	- [x] logic to stream data through port
 	- [x] create main function to handle everything
-    - [ ] logging
+    - [x] logging
 - [x] UI
 	- [x] Website
 		- [x] Form requests
 		- [x] progress bar
-        - [ ] add visualization of logs (graph)
-	
+        - [x] add visualization of logs (graph)
+	- [GUI]
+		- [ ] connect to main.go
+		- [ ] Design bubbleTea layout with lipgloss for styling
+		- [ ] progress bar
+		- [ ] visualization of logs (graph)
+
