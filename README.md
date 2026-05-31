@@ -1,15 +1,17 @@
 # Transfer
 
-Send folders between computers on your network. Files are compressed and encrypted with a password you choose before being transferred.
+Send folders securely between computers on your network. Files are automatically compressed and encrypted with a password before transfer.
+
+**Repository:** https://github.com/kikikian/transfer
 
 ## Requirements
 
-- Go 1.21+
-- Both computers on the same network
+- Go 1.21 or newer
+- Both computers on the same local network
 
-## Usage
+## Quick Start
 
-Clone the repo and run:
+### 1. Setup (do this on both computers)
 
 ```bash
 git clone https://github.com/kikikian/transfer
@@ -17,35 +19,52 @@ cd transfer
 go run main.go
 ```
 
-Open `http://localhost:3030` in your browser.
+Then open your browser to: **http://localhost:3030**
 
-### Sending a folder
+You should see a home page with two options: **Send** and **Receive**.
 
-1. Open the sender computer's browser at `http://localhost:3030`
-2. Click **Send**
-3. Enter the folder path, a password, and the receiver's IP address (e.g. `192.168.1.45:8080`)
-4. Click Send
+---
 
-### Receiving a folder
+## How to Transfer Files
 
-1. Open the receiver computer's browser at `http://localhost:3030`
-2. Click **Receive**
-3. Enter the output folder path and the same password used by the sender
-4. Click Receive — it will wait for the incoming transfer
+### Step 1: Find Your IP Address
 
-### Finding your IP address
+First, determine the receiver's IP address so the sender knows where to send files.
 
-On Linux/Mac:
-```bash
-ip addr
-```
-
-On Windows:
+**On Windows:**
 ```bash
 ipconfig
 ```
+Look for IPv4 Address (usually starts with `192.168.x.x` or `10.x.x.x`)
 
-Look for something like `192.168.1.x`.
+**On Linux/Mac:**
+```bash
+ip addr
+```
+Look for `inet` under your network interface.
+
+### Step 2: Receiver - Start Listening
+
+**On the receiving computer:**
+
+1. Go to http://localhost:3030
+2. Click **Receive**
+3. Choose the folder where you want to save files
+4. Enter a password (share this with the sender)
+5. Click **Receive** — it will wait for the connection
+
+### Step 3: Sender - Send Files
+
+**On the sending computer:**
+
+1. Go to http://localhost:3030
+2. Click **Send**
+3. Choose the folder you want to send
+4. Enter the **same password** as the receiver
+5. Enter the receiver's IP address in the format: `192.168.1.45:8080` (replace with actual IP)
+6. Click **Send** — files will compress and transfer automatically
+
+Watch the progress bar as files upload and transfer across the network.
 
 ## Tickets
 
